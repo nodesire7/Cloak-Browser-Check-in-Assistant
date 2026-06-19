@@ -1,114 +1,101 @@
 @echo off
-chcp 65001 >nul
-setlocal enabledelayedexpansion
-title Cloak Browser 自动签到助手
+:: Cloak Browser Check-in Assistant
+:: https://cloakbrowser.dev
+::
+:: Usage:
+::   run.bat           Auto-setup on first run, then check in
+::   run.bat --setup   Open setup wizard (add / edit / remove sites)
+::   run.bat --login   Clear cookies and force re-login
+::   run.bat <site>    Check in for one site only (e.g. ourbits)
 
 cd /d "%~dp0"
 
-echo.
-echo  ╔══════════════════════════════════════════╗
-echo  ║  Cloak Browser 自动签到助手              ║
-echo  ║  Cloak Browser Check-in Assistant        ║
-echo  ╚══════════════════════════════════════════╝
-echo.
-
-:: ── 解析参数 ──────────────────────────────────────────────────────────────────
-set MODE=checkin
-set SITE_ARG=
-if "%~1"=="--setup" set MODE=setup
-if "%~1"=="--login" set MODE=login
+:: ---- parse args -------------------------------------------------------------
+set "MODE=checkin"
+set "SITE_ARG="
+if "%~1"=="--setup" set "MODE=setup"
+if "%~1"=="--login" set "MODE=login"
 if "%~1"=="--help"  goto :help
 if "%~1"=="/?"      goto :help
 if not "%~1"=="" (
-    if not "%~1"=="--setup" if not "%~1"=="--login" (
-        set SITE_ARG=%~1
-    )
+    if not "%~1"=="--setup" if not "%~1"=="--login" set "SITE_ARG=%~1"
 )
-goto :step1
+goto :detect_python
 
 :help
-echo 用法 / Usage: run.bat [--setup ^| --login ^| ^<站点名^>]
+echo Usage: run.bat [--setup^|--login^|^<site^>]
 echo.
-echo   (无参数)    首次打开配置向导，之后直接签到所有站点
-echo   --setup     打开配置向导（添加/编辑/删除站点）
-echo   --login     清除 cookies 并强制重新登录
-echo   ^<站点名^>   只对单个站点签到（如 ourbits）
+echo   (no args)   Auto-setup on first run, then check in all sites
+echo   --setup     Open setup wizard (add / edit / remove sites)
+echo   --login     Clear cookies and force re-login
+echo   ^<site^>     Check in for one site only (e.g. ourbits)
 exit /b 0
 
-:: ── 第1步：检测 Python ─────────────────────────────────────────────────────────
-:step1
-echo [第 1/3 步] 检测 Python...
-set PYTHON=
+:: ---- step 1: detect Python --------------------------------------------------
+:detect_python
+set "PYTHON="
 python --version >nul 2>&1
-if not errorlevel 1 (set PYTHON=python & goto :python_ok)
+if not errorlevel 1 (set "PYTHON=python" & goto :python_ok)
 python3 --version >nul 2>&1
-if not errorlevel 1 (set PYTHON=python3 & goto :python_ok)
+if not errorlevel 1 (set "PYTHON=python3" & goto :python_ok)
 
-echo [-] 未找到 Python 3.8+
+echo [-] Python 3.8+ not found.
 echo.
-echo     请从 https://www.python.org/downloads/ 下载安装。
-echo     安装时请勾选 "Add Python to PATH" 选项。
+echo     Download: https://www.python.org/downloads/
+echo     Check "Add Python to PATH" during install.
 echo.
 pause
 exit /b 1
 
 :python_ok
-for /f "tokens=*" %%V in ('%PYTHON% --version 2^>^&1') do echo [+] %%V
+for /f "tokens=*" %%V in ('%PYTHON% --version 2^>^&1') do echo [+] %%V found.
 
-:: ── 第2步：安装依赖 ───────────────────────────────────────────────────────────
+:: ---- step 2: install dependencies ------------------------------------------
 echo.
-echo [第 2/3 步] 检查依赖...
 %PYTHON% -c "import cloakbrowser" >nul 2>&1
 if errorlevel 1 (
-    echo [!] 正在安装 cloakbrowser...
+    echo [*] Installing cloakbrowser...
     %PYTHON% -m pip install cloakbrowser --quiet
-    if errorlevel 1 (
-        %PYTHON% -m pip install cloakbrowser --quiet --break-system-packages
-    )
-    echo [+] cloakbrowser 安装完成
+    if errorlevel 1 %PYTHON% -m pip install cloakbrowser --quiet --break-system-packages
+    echo [+] cloakbrowser installed.
 ) else (
-    echo [+] cloakbrowser 已就绪
+    echo [+] cloakbrowser ready.
 )
-if exist requirements.txt (
-    %PYTHON% -m pip install -r requirements.txt --quiet >nul 2>&1
-)
+if exist requirements.txt %PYTHON% -m pip install -r requirements.txt --quiet >nul 2>&1
 
-:: ── 第3步：配置检查 ───────────────────────────────────────────────────────────
+:: ---- step 3: config / dispatch ----------------------------------------------
 echo.
-echo [第 3/3 步] 配置检查...
-
 if "%MODE%"=="setup" goto :open_setup
 if "%MODE%"=="login" goto :open_login
 if not exist config.json (
-    echo [!] 未找到 config.json，打开配置向导...
+    echo [*] config.json not found. Opening setup wizard...
     goto :open_setup
 )
-echo [+] 已找到 config.json
+echo [+] config.json found.
 goto :run
 
 :open_setup
 echo.
 %PYTHON% setup.py
 if not exist config.json (
-    echo [!] 未保存配置，退出。
+    echo [!] No config saved. Exiting.
     pause
     exit /b 0
 )
+if "%MODE%"=="setup" exit /b 0
 goto :run
 
 :open_login
-echo.
 %PYTHON% setup.py --login
 goto :run
 
+:: ---- run check-in -----------------------------------------------------------
 :run
-echo.
-echo 开始签到...
 echo.
 if "%SITE_ARG%"=="" (
     %PYTHON% checkin.py
 ) else (
-    %PYTHON% checkin.py %SITE_ARG%
+    %PYTHON% checkin.py "%SITE_ARG%"
 )
 echo.
 pause
