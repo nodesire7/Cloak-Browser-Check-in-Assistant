@@ -143,7 +143,7 @@ def add_site(config: dict):
         # 检查是否已存在
         existing = next((s for s in config["sites"] if s["name"] == name), None)
         if existing:
-            warn(f"站点 '{name}' 已存在。如需修改密码，请使用"编辑"功能。")
+            warn(f"站点 '{name}' 已存在。如需修改密码，请使用【编辑】功能。")
             return
 
         print(f"\n  正在添加：{bold(tpl['_desc'])}")
