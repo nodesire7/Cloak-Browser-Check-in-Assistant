@@ -1,0 +1,21 @@
+# User credentials — never commit
+config.json
+
+# Browser session data
+cookies_*.json
+profile_*/
+captcha_*.png
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Claude Code
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db

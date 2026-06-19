@@ -1,0 +1,16 @@
+{
+  "sites": [
+    {
+      "name": "ourbits",
+      "enabled": true,
+      "username": "your_ourbits_username",
+      "password": "your_ourbits_password"
+    },
+    {
+      "name": "audiences",
+      "enabled": true,
+      "username": "your_audiences_username",
+      "password": "your_audiences_password"
+    }
+  ]
+}
